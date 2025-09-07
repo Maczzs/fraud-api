@@ -1,85 +1,80 @@
 <!doctype html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Fraud Prediction Demo</title>
-      <style>
-        body { font-family: sans-serif; margin: 2rem; max-width: 760px; }
-        label { display:block; margin-top: 0.75rem; }
-        input, textarea { width: 100%; padding: 0.5rem; }
-        button { margin-top: 1rem; padding: 0.6rem 1rem; cursor: pointer; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-        .row { display:flex; gap:1rem; }
-        .row > div { flex:1; }
-      </style>
-    </head>
-    <body>
-      <h1>Credit Card Fraud – Demo Frontend</h1>
-      <p>This is a minimal HTML page to call your FastAPI Docker service. Replace <code>API_BASE</code> with your deployed URL.</p>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fraud Prediction Demo</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; max-width: 760px; }
+    h1 { margin-bottom: 0.25rem; }
+    p { color:#555; }
+    label { display:block; margin-top: 0.75rem; }
+    textarea, button { width: 100%; }
+    textarea { padding: 0.6rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    button { margin-top: 0.75rem; padding: 0.6rem 1rem; cursor: pointer; }
+    pre { background: #f6f6f6; padding: 1rem; overflow:auto; }
+  </style>
 
-      <label>API Base (e.g., https://your-cloud-run-url):</label>
-      <input id="api" value="http://localhost:8080" />
+  <!-- Use your live API URL -->
+  <script>
+    const API_BASE = "https://fraud-api-sof5.onrender.com";
+  </script>
+</head>
+<body>
+  <h1>Credit Card Fraud — Demo Frontend</h1>
+  <p>Calls your FastAPI service at <strong id="api-url"></strong>.</p>
 
-      <h3>Send JSON with feature names (recommended)</h3>
-      <p>Paste your full features JSON here. It must include all feature keys from your training <code>feature_order</code> (e.g., <code>Time</code>, <code>V1</code> ... <code>V28</code>, <code>Amount</code>).</p>
-      <textarea id="json" rows="12" class="mono">{ 
+  <label for="json">Send JSON with feature names</label>
+  <textarea id="json" rows="16">{
   "features": {
     "Time": 10000,
     "V1": -1.23,
     "V2": 0.45,
-    "V3": 0.0,
-    "V4": 0.0,
-    "V5": 0.0,
-    "V6": 0.0,
-    "V7": 0.0,
-    "V8": 0.0,
-    "V9": 0.0,
-    "V10": 0.0,
-    "V11": 0.0,
-    "V12": 0.0,
-    "V13": 0.0,
-    "V14": 0.0,
-    "V15": 0.0,
-    "V16": 0.0,
-    "V17": 0.0,
-    "V18": 0.0,
-    "V19": 0.0,
-    "V20": 0.0,
-    "V21": 0.0,
-    "V22": 0.0,
-    "V23": 0.0,
-    "V24": 0.0,
-    "V25": 0.0,
-    "V26": 0.0,
-    "V27": 0.0,
-    "V28": 0.0,
+    "V3": 0, "V4": 0, "V5": 0, "V6": 0, "V7": 0, "V8": 0, "V9": 0, "V10": 0,
+    "V11": 0, "V12": 0, "V13": 0, "V14": 0, "V15": 0, "V16": 0, "V17": 0, "V18": 0, "V19": 0, "V20": 0,
+    "V21": 0, "V22": 0, "V23": 0, "V24": 0, "V25": 0, "V26": 0, "V27": 0, "V28": 0,
     "Amount": 34.56
   }
 }</textarea>
-      <button onclick="send()">Predict</button>
 
-      <pre id="out" class="mono" style="margin-top:1rem; background:#f5f5f5; padding:1rem;"></pre>
+  <button id="predict">Predict</button>
 
-      <script>
-        async function send() {
-          const base = document.getElementById('api').value.trim().replace(/\/$/, '');
-          let payload;
-          try {
-            payload = JSON.parse(document.getElementById('json').value);
-          } catch (e) {
-            document.getElementById('out').textContent = 'Invalid JSON: ' + e.message;
-            return;
-          }
-          const res = await fetch(base + '/predict', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-          });
-          const txt = await res.text();
-          try { document.getElementById('out').textContent = JSON.stringify(JSON.parse(txt), null, 2); }
-          catch { document.getElementById('out').textContent = txt; }
-        }
-      </script>
-    </body>
-    </html>
+  <h3>Result</h3>
+  <pre id="out"></pre>
+
+  <script>
+    // show which API URL we’re using
+    document.getElementById('api-url').textContent = API_BASE;
+
+    document.getElementById('predict').onclick = async () => {
+      const out = document.getElementById('out');
+      out.textContent = 'Sending...';
+
+      // parse JSON from the textarea
+      let payload;
+      try {
+        payload = JSON.parse(document.getElementById('json').value);
+      } catch (e) {
+        out.textContent = '❌ Invalid JSON: ' + e.message;
+        return;
+      }
+
+      // call your API
+      try {
+        const url = API_BASE.replace(/\/$/, '') + '/predict';
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        try { out.textContent = JSON.stringify(JSON.parse(text), null, 2); }
+        catch { out.textContent = text; }
+      } catch (err) {
+        out.textContent = '❌ Network error: ' + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
