@@ -1,31 +1,178 @@
 <!doctype html>
-<html>
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fraud Prediction Demo</title>
+  <title>Credit Card Fraud – Predictor</title>
+
+  <!-- Google Font (optional, looks nicer) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
   <style>
-    body { font-family: sans-serif; margin: 2rem; max-width: 760px; }
-    h1 { margin-bottom: 0.25rem; }
-    p { color:#555; }
-    label { display:block; margin-top: 0.75rem; }
-    textarea, button { width: 100%; }
-    textarea { padding: 0.6rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
-    button { margin-top: 0.75rem; padding: 0.6rem 1rem; cursor: pointer; }
-    pre { background: #f6f6f6; padding: 1rem; overflow:auto; }
+    :root {
+      --bg: #ffffff;
+      --fg: #0f172a;            /* slate-900 */
+      --muted: #64748b;         /* slate-500 */
+      --card: #f8fafc;          /* slate-50 */
+      --border: #e5e7eb;        /* gray-200 */
+      --accent: #2563eb;        /* blue-600 */
+      --accent-600: #1d4ed8;    /* blue-700 */
+      --ok: #16a34a;            /* green-600 */
+      --warn: #ef4444;          /* red-500 */
+    }
+    [data-theme="dark"] {
+      --bg: #0b1020;
+      --fg: #e5e7eb;
+      --muted: #94a3b8;
+      --card: #111827;
+      --border: #1f2937;
+      --accent: #3b82f6;
+      --accent-600: #2563eb;
+      --ok: #22c55e;
+      --warn: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .title { display: flex; align-items: baseline; gap: 10px; }
+    .title h1 { font-size: 22px; margin: 0; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+
+    .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 960px) { .row { grid-template-columns: 1fr 1fr; } }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    label { font-weight: 600; font-size: 14px; }
+    textarea {
+      width: 100%;
+      min-height: 380px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 12px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 380px;
+      font-size: 13px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button, .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    button.secondary {
+      background: transparent;
+      color: var(--fg);
+    }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .status {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 14px; color: var(--muted);
+      padding: 6px 10px; border: 1px solid var(--border);
+      border-radius: 999px; background: var(--card);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--warn); }
+    .dot.ok { background: var(--ok); }
+
+    .rightHeader { display:flex; align-items:center; gap:10px; }
+
+    .link { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .link:hover { text-decoration: underline; }
+
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent;
+      border-radius: 50%; display: inline-block; vertical-align: middle;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .muted { color: var(--muted); font-size: 13px; }
   </style>
 
-  <!-- Use your live API URL -->
   <script>
+    // ✅ Set your live API URL here (HTTPS)
     const API_BASE = "https://fraud-api-sof5.onrender.com";
+
+    function setTheme(next) {
+      const html = document.documentElement;
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.getElementById('themeLabel').textContent = next === 'dark' ? 'Dark' : 'Light';
+    }
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      setTheme(current === 'light' ? 'dark' : 'light');
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      if (saved) setTheme(saved);
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+    })();
   </script>
 </head>
-<body>
-  <h1>Credit Card Fraud — Demo Frontend</h1>
-  <p>Calls your FastAPI service at <strong id="api-url"></strong>.</p>
 
-  <label for="json">Send JSON with feature names</label>
-  <textarea id="json" rows="16">{
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <h1>Credit Card Fraud – Predictor</h1>
+        <span class="subtitle">FastAPI + Render</span>
+      </div>
+      <div class="rightHeader">
+        <span id="status" class="status"><span id="dot" class="dot"></span><span id="statusText">Checking API…</span></span>
+        <button class="secondary" onclick="toggleTheme()">Appearance: <span id="themeLabel">Light</span></button>
+      </div>
+    </header>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="muted">API: <a id="apiLink" class="link" href="#" target="_blank" rel="noopener">loading…</a></div>
+      <div class="hint">If you change your backend URL in the future, update the <code>API_BASE</code> constant near the top of this file.</div>
+    </div>
+
+    <div class="row">
+      <section class="card">
+        <label for="json">Request JSON</label>
+        <textarea id="json" spellcheck="false">{
   "features": {
     "Time": 10000,
     "V1": -1.23,
@@ -37,42 +184,100 @@
   }
 }</textarea>
 
-  <button id="predict">Predict</button>
+        <div class="toolbar">
+          <button id="predictBtn"><span id="spin" class="spinner" style="display:none;"></span>Predict</button>
+          <button class="secondary" id="exampleBtn" type="button">Load Example</button>
+          <button class="secondary" id="clearBtn" type="button">Clear</button>
+        </div>
+        <div class="hint">Make sure all features in <code>feature_order</code> are present: <code>Time, V1..V28, Amount</code>.</div>
+      </section>
 
-  <h3>Result</h3>
-  <pre id="out"></pre>
+      <section class="card">
+        <label>Result</label>
+        <pre id="out">{ }</pre>
+        <div class="toolbar">
+          <button class="secondary" id="copyBtn" type="button">Copy Result</button>
+          <a class="btn" id="docsBtn" target="_blank" rel="noopener">Open API Docs</a>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <script>
-    // show which API URL we’re using
-    document.getElementById('api-url').textContent = API_BASE;
+    // link to API
+    document.getElementById('apiLink').href = API_BASE;
+    document.getElementById('apiLink').textContent = API_BASE.replace(/\/$/, '');
+    document.getElementById('docsBtn').href = API_BASE.replace(/\/$/, '') + '/docs';
 
-    document.getElementById('predict').onclick = async () => {
-      const out = document.getElementById('out');
-      out.textContent = 'Sending...';
-
-      // parse JSON from the textarea
-      let payload;
+    // health check
+    async function healthCheck() {
+      const dot = document.getElementById('dot');
+      const txt = document.getElementById('statusText');
       try {
-        payload = JSON.parse(document.getElementById('json').value);
+        const res = await fetch(API_BASE.replace(/\/$/, '') + '/health', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Bad status');
+        dot.classList.add('ok');
+        txt.textContent = 'Connected';
       } catch (e) {
-        out.textContent = '❌ Invalid JSON: ' + e.message;
-        return;
+        dot.classList.remove('ok');
+        txt.textContent = 'Offline';
       }
+    }
+    healthCheck();
+    setInterval(healthCheck, 30000);
 
-      // call your API
+    // buttons
+    const predictBtn = document.getElementById('predictBtn');
+    const spin = document.getElementById('spin');
+    const out = document.getElementById('out');
+
+    document.getElementById('exampleBtn').onclick = () => {
+      document.getElementById('json').value = `{
+  "features": {
+    "Time": 10000,
+    "V1": -1.23,
+    "V2": 0.45,
+    "V3": 0, "V4": 0, "V5": 0, "V6": 0, "V7": 0, "V8": 0, "V9": 0, "V10": 0,
+    "V11": 0, "V12": 0, "V13": 0, "V14": 0, "V15": 0, "V16": 0, "V17": 0, "V18": 0, "V19": 0, "V20": 0,
+    "V21": 0, "V22": 0, "V23": 0, "V24": 0, "V25": 0, "V26": 0, "V27": 0, "V28": 0,
+    "Amount": 34.56
+  }
+}`;
+    };
+
+    document.getElementById('clearBtn').onclick = () => {
+      document.getElementById('json').value = '';
+      out.textContent = '{ }';
+    };
+
+    document.getElementById('copyBtn').onclick = async () => {
+      try { await navigator.clipboard.writeText(out.textContent); alert('Result copied'); }
+      catch { alert('Could not copy'); }
+    };
+
+    predictBtn.onclick = async () => {
+      out.textContent = '';
+      predictBtn.disabled = true;
+      spin.style.display = 'inline-block';
       try {
-        const url = API_BASE.replace(/\/$/, '') + '/predict';
-        const res = await fetch(url, {
+        const txt = document.getElementById('json').value;
+        let payload;
+        try { payload = JSON.parse(txt); }
+        catch (e) { out.textContent = '❌ Invalid JSON: ' + e.message; return; }
+
+        const res = await fetch(API_BASE.replace(/\/$/, '') + '/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-
-        const text = await res.text();
-        try { out.textContent = JSON.stringify(JSON.parse(text), null, 2); }
-        catch { out.textContent = text; }
+        const body = await res.text();
+        try { out.textContent = JSON.stringify(JSON.parse(body), null, 2); }
+        catch { out.textContent = body; }
       } catch (err) {
         out.textContent = '❌ Network error: ' + err.message;
+      } finally {
+        predictBtn.disabled = false;
+        spin.style.display = 'none';
       }
     };
   </script>
